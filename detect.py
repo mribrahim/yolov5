@@ -6,6 +6,11 @@ from models.experimental import *
 from utils.datasets import *
 from utils.utils import *
 
+import cv2
+from myUtils import *
+from tracking.tracker import Tracker
+
+
 
 def detect(save_img=False):
     out, source, weights, view_img, save_txt, imgsz = \
@@ -45,6 +50,11 @@ def detect(save_img=False):
     # Get names and colors
     names = model.module.names if hasattr(model, 'module') else model.names
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
+    
+    tracker = Tracker(160, 100, 25, 1)
+    track_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
+					(127, 127, 255), (255, 0, 255), (255, 127, 255),
+					(127, 0, 255), (127, 0, 127),(127, 10, 255), (0,255, 127)]
 
     # Run inference
     t0 = time.time()
@@ -69,13 +79,16 @@ def detect(save_img=False):
         if classify:
             pred = apply_classifier(pred, modelc, img, im0s)
 
+        bboxes = []
+        coordinates = []
+
         # Process detections
         for i, det in enumerate(pred):  # detections per image
             if webcam:  # batch_size >= 1
                 p, s, im0 = path[i], '%g: ' % i, im0s[i].copy()
             else:
                 p, s, im0 = path, '', im0s
-
+            
             save_path = str(Path(out) / Path(p).name)
             txt_path = str(Path(out) / Path(p).stem) + ('_%g' % dataset.frame if dataset.mode == 'video' else '')
             s += '%gx%g ' % img.shape[2:]  # print string
@@ -98,14 +111,37 @@ def detect(save_img=False):
 
                     if save_img or view_img:  # Add bbox to image
                         label = '%s %.2f' % (names[int(cls)], conf)
+                        c1, c2 = (int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3]))
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=3)
+
+                        bboxes.append([int(cls), conf, label, c1, c2])
+
+
+            # bboxes = delete_overlappings(bboxes, 0.8)
+            for box in bboxes:
+                coordinates.append([box[3][0], box[3][1]])
+
+            if len(coordinates) == 0:
+                coordinates = np.empty((1,2), dtype=float, order='C')
+            else:
+                coordinates = np.array(coordinates)
+
+            tracker.Update(coordinates)
+            for j in range(len(tracker.tracks)):
+                if (len(tracker.tracks[j].trace) > 1 and tracker.tracks[j].skipped_frames==0 ):
+                    x = int(tracker.tracks[j].trace[-1][0,0])
+                    y = int(tracker.tracks[j].trace[-1][0,1])
+                    cv2.putText(im0,str(tracker.tracks[j].track_id), (x,y),0, 0.5, track_colors[j],2)
+
+            if view_img:
+                cv2.waitKey(0)      
 
             # Print time (inference + NMS)
             print('%sDone. (%.3fs)' % (s, t2 - t1))
 
             # Stream results
             if view_img:
-                cv2.imshow(p, im0)
+                cv2.imshow("img", im0)
                 if cv2.waitKey(1) == ord('q'):  # q to quit
                     raise StopIteration
 
