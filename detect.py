@@ -8,8 +8,8 @@ from utils.utils import *
 
 import cv2
 from myUtils import *
-from tracking.tracker import Tracker
-
+from tracking.tracking import Tracking
+from tracking.unit_object import UnitObject
 
 
 def detect(save_img=False):
@@ -51,10 +51,7 @@ def detect(save_img=False):
     names = model.module.names if hasattr(model, 'module') else model.names
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
     
-    tracker = Tracker(160, 100, 25, 1)
-    track_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
-					(127, 127, 255), (255, 0, 255), (255, 127, 255),
-					(127, 0, 255), (127, 0, 127),(127, 10, 255), (0,255, 127)]
+    tracker = Tracking()
 
     # Run inference
     t0 = time.time()
@@ -81,6 +78,7 @@ def detect(save_img=False):
 
         bboxes = []
         coordinates = []
+        print("\n")
 
         # Process detections
         for i, det in enumerate(pred):  # detections per image
@@ -119,19 +117,21 @@ def detect(save_img=False):
 
             # bboxes = delete_overlappings(bboxes, 0.8)
             for box in bboxes:
-                coordinates.append([box[3][0], box[3][1]])
+                #  coordinates.append(UnitObject( [box[3][0], box[3][1], box[4][0], box[4][1] ], box[0]))
+                coordinates.append(UnitObject( [box[3][0], box[3][1], box[4][0], box[4][1] ], 1))
+                print(box)
 
-            if len(coordinates) == 0:
-                coordinates = np.empty((1,2), dtype=float, order='C')
-            else:
-                coordinates = np.array(coordinates)
+            # if len(coordinates) == 0:
+            #     coordinates = np.empty((1,2), dtype=float, order='C')
+            # else:
+            #     coordinates = np.array(coordinates)
 
-            tracker.Update(coordinates)
-            for j in range(len(tracker.tracks)):
-                if (len(tracker.tracks[j].trace) > 1 and tracker.tracks[j].skipped_frames==0 ):
-                    x = int(tracker.tracks[j].trace[-1][0,0])
-                    y = int(tracker.tracks[j].trace[-1][0,1])
-                    cv2.putText(im0,str(tracker.tracks[j].track_id), (x,y),0, 0.5, track_colors[j],2)
+            tracker.update(coordinates)
+            for j in range(len(tracker.tracker_list)):
+                x = int(tracker.tracker_list[j].unit_object.box[0])
+                y = int(tracker.tracker_list[j].unit_object.box[1])
+                cv2.putText(im0,str(tracker.tracker_list[j].tracking_id), (x,y),0, 0.5, (0,0,255),2)
+                print("tracker(%d) %d %d" %(j,x,y))
 
             if view_img:
                 cv2.waitKey(0)      
