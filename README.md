@@ -4,7 +4,7 @@
 
 
 
-## Detect Vehicles (car, truck) and humans and Track
+## Detect Objects (car, truck, humand) + Tracking
 
 download pre-trained weights for vehicle and human detection from aerial images
 https://github.com/mribrahim/yolov5-tracking/releases/tag/weightsVehicleHuman
