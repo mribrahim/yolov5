@@ -115,23 +115,18 @@ def detect(save_img=False):
                         bboxes.append([int(cls), conf, label, c1, c2])
 
 
-            # bboxes = delete_overlappings(bboxes, 0.8)
+            bboxes = delete_overlappings(bboxes, 0.8)
             for box in bboxes:
                 #  coordinates.append(UnitObject( [box[3][0], box[3][1], box[4][0], box[4][1] ], box[0]))
                 coordinates.append(UnitObject( [box[3][0], box[3][1], box[4][0], box[4][1] ], 1))
                 print(box)
-
-            # if len(coordinates) == 0:
-            #     coordinates = np.empty((1,2), dtype=float, order='C')
-            # else:
-            #     coordinates = np.array(coordinates)
 
             tracker.update(coordinates)
             for j in range(len(tracker.tracker_list)):
                 x = int(tracker.tracker_list[j].unit_object.box[0])
                 y = int(tracker.tracker_list[j].unit_object.box[1])
                 cv2.putText(im0,str(tracker.tracker_list[j].tracking_id), (x,y),0, 0.5, (0,0,255),2)
-                print("tracker(%d) %d %d" %(j,x,y))
+                print("tracker(%d) %d %d  hits: %d" %(j,x,y, tracker.tracker_list[j].hits))
 
             if view_img:
                 cv2.waitKey(0)      
