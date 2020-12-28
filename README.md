@@ -1,7 +1,7 @@
 
 ## Check yolov5 details from
-[yolov5] (https://github.com/ultralytics/yolov5)
-
+* [YOLOv5](https://github.com/ultralytics/yolov5)
+* [Tutorials](https://github.com/ultralytics/yolov5#tutorials)
 
 
 ## Detect Objects (car, truck and human) + Tracking
